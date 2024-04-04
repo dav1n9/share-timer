@@ -21,7 +21,7 @@ public class Timer {
     @Column(unique = true)
     private String name;
 
-    private int remainingTime;
+    private String remainingTime;
 
     private LocalDateTime startTime;
 
@@ -32,7 +32,7 @@ public class Timer {
     private List<TimerMember> timerMembers = new ArrayList<>();
 
     @Builder
-    public Timer(int remainingTime, String name, LocalDateTime startTime, TimerStatus status) {
+    public Timer(String remainingTime, String name, LocalDateTime startTime, TimerStatus status) {
         this.remainingTime = remainingTime;
         this.name = name;
         this.startTime = startTime;
