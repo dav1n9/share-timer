@@ -38,4 +38,12 @@ public class Timer {
         this.startTime = startTime;
         this.status = status;
     }
+
+    public void update(String remainingTime, TimerStatus status) {
+        this.remainingTime = remainingTime;
+        this.status = status;
+        if (status == TimerStatus.START) {
+            this.startTime = LocalDateTime.now();
+        }
+    }
 }
