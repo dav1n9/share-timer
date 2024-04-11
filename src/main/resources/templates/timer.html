@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Timer</title>
+</head>
+<body>
+<div class="container">
+    <div>
+        <h2>TIMER</h2>
+
+        <span>TIMER NAME: </span><span th:text="${timer.getTimerName()}"></span><br><br>
+
+        <button onclick="addSeconds(300)">+5</button>
+        <button onclick="addSeconds(900)">+15</button>
+        <button onclick="addSeconds(1800)">+30</button>
+        <br><br>
+
+        <span>REMAINING TIME: </span>
+        <h2 id="remainingTime" th:text="${timer.getRemainingTime()}"></h2><br>
+
+        <span>STATUS: </span><span id="status" th:text="${timer.getStatus()}"></span><br><br>
+
+        <button type="button" value="STOP" onclick="stop()">STOP</button>
+        <button type="button" value="START" onclick="start()">START</button>
+        <button type="button" value="RESET" onclick="reset()">RESET</button>
+    </div>
+</div>
+</body>
+
+<script th:inline="javascript">
+    let socket = new WebSocket("ws://localhost:8080/timer");
+
+    socket.onopen = function (e) {
+        console.log('open server!')
+        const enterMessage = {
+            "messageType": "ENTER",
+            "timerName": [[${timer.getTimerName()}]],
+            "remainingTime": document.getElementById("remainingTime").innerText,
+            "startTime": [[${timer.getStartTime()}]],
+            "status": document.getElementById("status").innerText
+        };
+        socket.send(JSON.stringify(enterMessage));
+
+        if (document.getElementById("status").innerText === "START") start();
+    };
+
+    socket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        if (data.messageType === "SEND") {
+            document.getElementById("remainingTime").innerText = data.remainingTime;
+            document.getElementById("status").innerText = data.status;
+            if (data.status === "START")
+                workingTimer(timeToSeconds(document.getElementById("remainingTime").innerText));
+            else if (data.status === "STOP") {
+                clearInterval(timerInterval); // 타이머 중지
+            }
+        }
+    };
+
+    let timerInterval;
+    let totalSeconds = 0;
+
+    function workingTimer(seconds) {
+        clearInterval(timerInterval);
+        totalSeconds = seconds;
+        updateTimer();
+        console.log("workingTimer");
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+        totalSeconds--;
+        if (totalSeconds <= 0) {
+            clearInterval(timerInterval); // 타이머 중지
+            reset();
+            return;
+        }
+        document.getElementById("remainingTime").innerText = secondsToTimer(totalSeconds) // 타이머 업데이트
+    }
+
+    function secondsToTimer(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        // 각 요소를 두 자리 숫자로 포맷팅한 결과 문자열 반환
+        return padNumber(hours) + ":" + padNumber(minutes) + ":" + padNumber(remainingSeconds);
+    }
+
+    function padNumber(num) {
+        return num < 10 ? "0" + num : num; // 숫자를 2자리로 포맷
+    }
+
+    function timeToSeconds(timeString) {
+        const timeParts = timeString.split(':');  // 문자열을 ":"을 기준으로 나누어 시, 분, 초로 분리
+        if (timeParts.length >= 2) {
+            const hours = parseInt(timeParts[0]);
+            const minutes = parseInt(timeParts[1]);
+            const seconds = parseInt(timeParts[2]);
+
+            return hours * 3600 + minutes * 60 + seconds;   // 총 시간을 초 단위로 계산
+        } else {
+            return parseInt(timeParts[0]);
+        }
+    }
+
+    function addSeconds(increment) {
+        const min = timeToSeconds(document.getElementById("remainingTime").innerText) + increment;
+        const enterMessage = {
+            "messageType": "SEND",
+            "timerName": [[${timer.getTimerName()}]],
+            "remainingTime": secondsToTimer(min),
+            "startTime": [[${timer.getStartTime()}]],
+            "status": document.getElementById("status").innerText
+        };
+        socket.send(JSON.stringify(enterMessage));
+    }
+
+    function getNow() {
+        const now = new Date();
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
+        let seconds = now.getSeconds();
+
+        return padNumber(hours) + ":" + padNumber(minutes) + ":" + padNumber(seconds);
+    }
+
+    function stop() {
+        const sendMessage = {
+            "messageType": "SEND",
+            "timerName": [[${timer.getTimerName()}]],
+            "remainingTime": document.getElementById("remainingTime").innerText,
+            "startTime": getNow(),
+            "status": "STOP"
+        };
+        socket.send(JSON.stringify(sendMessage));
+    }
+
+    function start() {
+        const sendMessage = {
+            "messageType": "SEND",
+            "timerName": [[${timer.getTimerName()}]],
+            "remainingTime": document.getElementById("remainingTime").innerText,
+            "startTime": getNow(),
+            "status": "START"
+        };
+        socket.send(JSON.stringify(sendMessage));
+    }
+
+    function reset() {
+        const sendMessage = {
+            "messageType": "SEND",
+            "timerName": [[${timer.getTimerName()}]],
+            "remainingTime": "00:00:00",
+            "startTime": getNow(),
+            "status": "STOP"
+        };
+        socket.send(JSON.stringify(sendMessage));
+    }
+
+    function quit() {
+
+    }
+
+</script>
+
+</html>
