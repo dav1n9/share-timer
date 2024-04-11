@@ -1,10 +1,8 @@
 package com.sharetimer.sharetimer.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
-@AllArgsConstructor
+@Data
 public class AddTimerRequest {
     private String timerName;
 }

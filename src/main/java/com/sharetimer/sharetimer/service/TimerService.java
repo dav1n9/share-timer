@@ -20,6 +20,8 @@ public class TimerService {
         Timer timer;
         if (timerRepository.findByName(timerName).isPresent()) {   // 타이머가 이미 존재하면 멤버 추가
             throw new IllegalArgumentException("이미 존재하는 타이머 이름입니다.");
+        } else if (timerName == null) {
+            throw new IllegalArgumentException("timer name: " + timerName);
         } else {
             timer = Timer.builder()
                     .name(timerName)
